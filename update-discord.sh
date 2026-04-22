@@ -8,7 +8,6 @@ fi
 
 echo "Gathering latest version information..."
 
-URL="https://discord.com/api/download/stable?platform=linux&format=tar.gz"
 BUILD_FILE=""
 if [ -f "/opt/Discord/resources/build_info.json" ]; then
     BUILD_FILE="/opt/Discord/resources/build_info.json"
