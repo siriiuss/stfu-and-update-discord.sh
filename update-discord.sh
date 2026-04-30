@@ -69,7 +69,7 @@ EOL
     fi
 fi
 
-RELEASE_CHANNEL=$(jq -r '.release_channel' "$BUILD_FILE")
+RELEASE_CHANNEL=$(jq -r '.releaseChannel' "$BUILD_FILE")
 VERSION=$(jq -r '.version' "$BUILD_FILE")
 
 
