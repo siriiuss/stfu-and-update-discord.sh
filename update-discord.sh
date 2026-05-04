@@ -5,20 +5,19 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 
-
 echo "Gathering latest version information..."
 
 BUILD_FILE=""
 if [ -f "/opt/Discord/resources/build_info.json" ]; then
     BUILD_FILE="/opt/Discord/resources/build_info.json"
-    elif [ -f "/opt/DiscordCanary/resources/build_info.json" ]; then
+elif [ -f "/opt/DiscordCanary/resources/build_info.json" ]; then
     BUILD_FILE="/opt/DiscordCanary/resources/build_info.json"
-    elif [ -f "/opt/DiscordPTB/resources/build_info.json" ]; then
+elif [ -f "/opt/DiscordPTB/resources/build_info.json" ]; then
     BUILD_FILE="/opt/DiscordPTB/resources/build_info.json"
 fi
+
 TEMP_FILE="/tmp/discord.tar.gz"
 TARGET_DIR="/opt"
-
 
 if [ ! -f "$BUILD_FILE" ]; then
     echo "Error: Discord is not installed or $BUILD_FILE not found. Check for correct path."
@@ -30,25 +29,27 @@ if [ ! -f "$BUILD_FILE" ]; then
             echo "Invalid channel. Choose: stable, canary or ptb"
             exit 1
         fi
+        case "$channel" in
+            stable)  INSTALL_DIR="/opt/Discord";       APP_NAME="Discord";        EXEC="Discord" ;;
+            canary)  INSTALL_DIR="/opt/DiscordCanary"; APP_NAME="Discord Canary"; EXEC="DiscordCanary" ;;
+            ptb)     INSTALL_DIR="/opt/DiscordPTB";    APP_NAME="Discord PTB";    EXEC="DiscordPTB" ;;
+        esac
         URL="https://discord.com/api/download/$channel?platform=linux&format=tar.gz"
+        FILE_NAME=$(basename "$(curl -sLI -o /dev/null -w '%{url_effective}' "$URL")")
+        LATEST_VERSION=$(echo "$FILE_NAME" | grep -oP '\d+\.\d+\.\d+')
         echo "Installing Discord..."
         echo "Downloading latest Discord version"
         curl -L "$URL" -o "$TEMP_FILE"
-        echo "Uncompressing archive and updating /opt/Discord"
+        echo "Uncompressing archive and updating $INSTALL_DIR"
         sudo tar -xzf "$TEMP_FILE" -C "$TARGET_DIR"
+        echo "{\"releaseChannel\": \"$channel\", \"version\": \"$LATEST_VERSION\"}" | sudo tee "$INSTALL_DIR/resources/build_info.json" > /dev/null
         echo "Deleting compressed file..."
         rm -f "$TEMP_FILE"
         echo "Discord installation succeeded."
         read -p "Do you want to add Discord to the applications menu? (y/n): " choice
         if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
             echo "Adding Discord to the applications menu..."
-            case "$channel" in
-                stable)  INSTALL_DIR="/opt/Discord";       APP_NAME="Discord";        EXEC="Discord" ;;
-                canary)  INSTALL_DIR="/opt/DiscordCanary"; APP_NAME="Discord Canary"; EXEC="DiscordCanary" ;;
-                ptb)     INSTALL_DIR="/opt/DiscordPTB";    APP_NAME="Discord PTB";    EXEC="DiscordPTB" ;;
-            esac
-            
-sudo tee /usr/share/applications/discord-${channel}.desktop > /dev/null <<EOL
+            sudo tee /usr/share/applications/discord-${channel}.desktop > /dev/null <<EOL
 [Desktop Entry]
 Name=$APP_NAME
 Comment=All-in-one voice and text chat for gamers that's free and secure.
@@ -60,9 +61,7 @@ Categories=Network;Chat;
 EOL
             echo "Discord has been added to the applications menu."
         fi
-        
-        
-        
+
         exit 0
     else
         exit 1
@@ -72,18 +71,14 @@ fi
 RELEASE_CHANNEL=$(jq -r '.releaseChannel' "$BUILD_FILE")
 VERSION=$(jq -r '.version' "$BUILD_FILE")
 
-
 URL="https://discord.com/api/download/$RELEASE_CHANNEL?platform=linux&format=tar.gz"
 FILE_NAME=$(basename "$(curl -sLI -o /dev/null -w '%{url_effective}' "$URL")")
-
 
 echo "Current Discord version: $VERSION"
 echo "Channel: $RELEASE_CHANNEL"
 echo "Checking for updates..."
 
-
 LATEST_VERSION=$(echo "$FILE_NAME" | grep -oP '\d+\.\d+\.\d+')
-
 
 echo "Latest Discord version: $LATEST_VERSION"
 
@@ -96,8 +91,8 @@ else
     curl -L "$URL" -o "$TEMP_FILE"
     echo "Uncompressing archive and updating /opt/Discord"
     sudo tar -xzf "$TEMP_FILE" -C "$TARGET_DIR"
+    echo "{\"releaseChannel\": \"$RELEASE_CHANNEL\", \"version\": \"$LATEST_VERSION\"}" | sudo tee "$BUILD_FILE" > /dev/null
     echo "Deleting compressed file..."
     rm -f "$TEMP_FILE"
     echo "Discord update succeeded"
-    
 fi
