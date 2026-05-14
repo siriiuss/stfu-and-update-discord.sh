@@ -9,6 +9,23 @@ info()    { echo -e "${YELLOW}$1${NC}"; }
 success() { echo -e "${GREEN}$1${NC}"; }
 error()   { echo -e "${RED}$1${NC}"; }
 
+show_help() {
+    echo "Usage: sudo ./update-discord.sh [OPTION]"
+    echo ""
+    echo "Options:"
+    echo "  --help        Show this help message"
+    echo "  --uninstall   Uninstall Discord"
+    echo "  --auto        Check for updates automatically on a schedule (uses cron)"
+    echo ""
+    echo "Without options: installs or updates Discord"
+}
+
+if [ "$EUID" -ne 0 ]; then
+    echo "Use with sudo"
+    show_help
+    exit
+fi
+
 BUILD_FILE=""
 TEMP_FILE="/tmp/discord.tar.gz"
 TARGET_DIR="/opt"
@@ -21,17 +38,6 @@ find_build_file() {
     elif [ -f "/opt/DiscordPTB/build_info.json" ]; then
         BUILD_FILE="/opt/DiscordPTB/build_info.json"
     fi
-}
-
-show_help() {
-    echo "Usage: ./update-discord.sh [OPTION]"
-    echo ""
-    echo "Options:"
-    echo "  --help        Show this help message"
-    echo "  --uninstall   Uninstall Discord"
-    echo "  --auto        Check for updates automatically on a schedule (uses cron)"
-    echo ""
-    echo "Without options: installs or updates Discord"
 }
 
 uninstall() {
